@@ -18,8 +18,15 @@ api.interceptors.request.use(config => {
 });
 
 // 2) 추천 리스트 가져오기
-export async function fetchRecommendations(userId: string): Promise<string[]> {
-  const res = await api.get<{ recommendations: string[] }>(`/recommend/${userId}`);
+// export async function fetchRecommendations(userId: string): Promise<string[]> {
+//   const res = await api.get<{ recommendations: string[] }>(`/recommend/${userId}`);
+//   return res.data.recommendations;
+// }
+export async function fetchRecommendations(userId: string, method = 'cf') {
+  const res = await api.get<{ recommendations: string[] }>(
+    `/recommend/${userId}`,
+    { params: { method } }
+  );
   return res.data.recommendations;
 }
 

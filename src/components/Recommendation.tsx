@@ -23,6 +23,12 @@ export default function Recommendation() {
     }
   };
 
+    const loadGptRecs = async () => {
+      const recs = await fetchRecommendations(userId, 'gpt');
+      setList(recs);
+      alert('GPT 기반 추천이 업데이트 되었습니다!');
+    };
+
   // 평점 남기기
   const handleRating = async (content: string, score: number) => {
     setError(null);
@@ -38,6 +44,9 @@ export default function Recommendation() {
 
   return (
     <div className="p-4">
+       <button onClick={loadGptRecs}>GPT 추천받기</button>
+        {/* 기존 CF 버튼도 그대로 두면 두 가지를 비교해 볼 수 있습니다 */}
+         <button onClick={() => loadRecs()}>CF 추천받기</button>
       <button
         onClick={loadRecs}
         disabled={loading}
