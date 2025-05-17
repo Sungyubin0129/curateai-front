@@ -1,80 +1,87 @@
 // src/components/Recommendation.tsx
 import React, { useState } from 'react';
 import { fetchRecommendations, postRating } from '../services/api';
+import { toast } from 'react-toastify';
 
 export default function Recommendation() {
   const [list, setList] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const userId = 'user1';  // 나중엔 로그인된 유저 ID로 대체
+  const userId = 'user1'; // 실제 로그인 유저로 대체
 
-  // 추천 목록 불러오기
-  const loadRecs = async () => {
+  const loadRecommendations = async (method: 'cf' | 'gpt') => {
     setLoading(true);
-    setError(null);
     try {
-      const recs = await fetchRecommendations(userId);
+      const recs = await fetchRecommendations(userId, method);
       setList(recs);
+      toast.success(`${method === 'cf' ? 'CF' : 'GPT'} 추천이 업데이트 되었습니다.`);
     } catch (e: any) {
-      console.error(e);
-      setError('추천 데이터를 불러오는 중 오류가 발생했습니다.');
+      toast.error('추천을 불러오는 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
   };
 
-    const loadGptRecs = async () => {
-      const recs = await fetchRecommendations(userId, 'gpt');
-      setList(recs);
-      alert('GPT 기반 추천이 업데이트 되었습니다!');
-    };
-
-  // 평점 남기기
   const handleRating = async (content: string, score: number) => {
-    setError(null);
     try {
       await postRating(userId, content, score);
-      // 평점 후엔 바로 추천 다시 가져오기
-      await loadRecs();
+      toast.success(`⭐️ '${content}'에 ${score}점이 저장되었습니다.`);
+      await loadRecommendations('cf');
     } catch (e: any) {
-      console.error(e);
-      setError('평점 저장에 실패했습니다.');
+      toast.error('평점 저장에 실패했습니다.');
     }
   };
 
   return (
-    <div className="p-4">
-       <button onClick={loadGptRecs}>GPT 추천받기</button>
-        {/* 기존 CF 버튼도 그대로 두면 두 가지를 비교해 볼 수 있습니다 */}
-         <button onClick={() => loadRecs()}>CF 추천받기</button>
-      <button
-        onClick={loadRecs}
-        disabled={loading}
-        className="px-4 py-2 bg-blue-600 text-white rounded mb-4"
-      >
-        {loading ? '로딩 중…' : '추천받기'}
-      </button>
+    <div className="min-h-screen bg-gray-50 py-10">
+      <div className="max-w-3xl mx-auto px-4">
+        <div className="flex justify-center space-x-4 mb-8">
+          <button
+            onClick={() => loadRecommendations('cf')}
+            disabled={loading}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 disabled:opacity-50"
+          >
+            {loading ? '로딩 중…' : 'CF 추천받기'}
+          </button>
+          <button
+            onClick={() => loadRecommendations('gpt')}
+            disabled={loading}
+            className="px-6 py-2 bg-purple-600 text-white rounded-lg shadow hover:bg-purple-700 disabled:opacity-50"
+          >
+            {loading ? '로딩 중…' : 'GPT 추천받기'}
+          </button>
+        </div>
 
-      {error && <p className="text-red-500 mb-2">{error}</p>}
+        {loading && (
+          <div className="flex justify-center mb-6">
+            <svg className="w-8 h-8 text-gray-500 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+            </svg>
+          </div>
+        )}
 
-      <ul>
-        {list.map((c) => (
-          <li key={c} className="mb-2 flex items-center">
-            <span className="font-medium">{c}</span>
-            <div className="ml-auto space-x-1">
-              {[1, 2, 3, 4, 5].map((r) => (
-                <button
-                  key={r}
-                  onClick={() => handleRating(c, r)}
-                  className="text-sm px-2 py-0.5 border rounded hover:bg-gray-100"
-                >
-                  {r}★
-                </button>
-              ))}
+        <div className="grid gap-6">
+          {list.map((content) => (
+            <div key={content} className="bg-white rounded-lg shadow p-6 flex items-center justify-between">
+              <span className="text-lg font-semibold text-gray-800">{content}</span>
+              <div className="space-x-2">
+                {[1, 2, 3, 4, 5].map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => handleRating(content, r)}
+                    className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100"
+                  >
+                    {r}★
+                  </button>
+                ))}
+              </div>
             </div>
-          </li>
-        ))}
-      </ul>
+          ))}
+          {!loading && list.length === 0 && (
+            <p className="text-center text-gray-500">추천 결과가 없습니다. 버튼을 눌러 추천을 받아보세요.</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
